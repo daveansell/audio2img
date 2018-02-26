@@ -1,30 +1,42 @@
+
 import sys
 
 from PIL import Image
 from PIL import ImageDraw
 import wave, struct
-#f = "/usr/share/kivy-examples/audio/12927_sweet_trip_mm_sweep_z.wav"
-#f = '/home/dave/cnc/software/media/audio2/cochlear/clean/classical.wav.mp3'
-#f='/home/dave/cnc/software/media/audio2/ageing/rock.wav.mp3'
+if sys.argv[0]=='python':
+	sys.argv=sys.argv[1:]
+if len(sys.argv)==1:
+	print "python audio2img filename ditherNum sampleEvery height"
+	print 
+	print "ditherNum - amplitude will be represented in ditherNum pixels - larger number more accurate but more stripy result"
+	print "sampleEvery - only produces a pixel for every nth audio frame"
+	print "height - image height in pixels"
+
 filename=sys.argv[1]
 print filename
 pcm_data = wave.open(filename)
 width = 1200*30 #pcm_data.frames
-height = 3000
 nchannels, sampwidth, framerate, nframes, comptype, compname = pcm_data.getparams()
 
-ditherNum = 16
-sampleEvery = 2
+if len(sys.argv)>2:
+	ditherNum = int(sys.argv[2])
+else:
+	ditherNum = 16
+if len(sys.argv)>3:
+	sampleEvery = int(sys.argv[3])
+else:
+	sampleEvery = 8
+if len(sys.argv)>4:
+	height = int(sys.argv[4])
+else:
+	height = 3000
 
 print "nchannels="+str(nchannels)
 print "nframes="+str(nframes)
 width = nframes/sampleEvery #min(width, nframes)
 print "nframes="+str(nframes)+" width="+str(width)
-#width = 20
 
-#framelist = pcm_data.readframes(width)
-
-#print framelist
 
 img = Image.new('RGB', (width, height))
 draw = ImageDraw.Draw(img)
@@ -33,7 +45,6 @@ mn =0
 data=[]
 numframe = 0;
 for i in range(0, nframes):
-#	data.append(struct.unpack("<h",  pcm_data.readframes(1)))
 	frame = pcm_data.readframes(1)
 	if len(frame)==4:
 		f = frame[0:2]
@@ -46,12 +57,9 @@ for i in range(0, nframes):
 	elif(len(frame)==2):
 		f = frame[0:2]
 		data.append(struct.unpack("<h",  f))
-#	data.append( int(struct.unpack("<h",  pcm_data.readframes(1)[0])))
 		m = max(m, data[i][0], -data[i][0])
 		numframe+=1
-print str(m)+" miin="+str(m)
 scale= 1.0/m
-print scale
 tx=0
 tn=10000
 for i in range(0, numframe, sampleEvery):
@@ -69,6 +77,5 @@ for i in range(0, numframe, sampleEvery):
 				draw.line([(x,j*(ditherNum-1)), (x,j*(ditherNum-1)+dither-1)], fill=(255,255,255))
 			else:
 				draw.line([(x,(j+1)*(ditherNum-1)-1), (x,(j+1)*(ditherNum-1)-dither)], fill=(255,255,255))
-print str(tx)+" -> "+str(tn)
 print filename+".png"
 img.save(filename+".audio"+str(ditherNum)+".png")
